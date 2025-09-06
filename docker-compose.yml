@@ -1,0 +1,72 @@
+version: "3.9"
+
+services:
+  keycloak-db:
+    image: postgres:15
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: keycloak
+      POSTGRES_USER: keycloak
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - keycloak-db_data:/var/lib/postgresql/data
+    networks:
+      - atlasfreight-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U keycloak -d keycloak"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak1:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak1
+    command:
+      - start-dev
+      - --hostname-strict=false
+      - --db=postgres
+      - --db-url=jdbc:postgresql://keycloak-db:5432/keycloak
+      - --db-username=keycloak
+      - --db-password=secret
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    ports:
+      - "8081:8080"
+    networks:
+      - atlasfreight-net
+    labels:
+      - "SERVICE_NAME=keycloack1"
+
+  keycloak2:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak2
+    command:
+      - start-dev
+      - --hostname-strict=false
+      - --db=postgres
+      - --db-url=jdbc:postgresql://keycloak-db:5432/keycloak
+      - --db-username=keycloak
+      - --db-password=secret
+    environment:
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    ports:
+      - "8082:8080"
+    networks:
+      - atlasfreight-net
+    labels:
+      - "SERVICE_NAME=keycloack2"
+
+volumes:
+  keycloak-db_data:
+
+networks:
+  atlasfreight-net:
+    external: true
