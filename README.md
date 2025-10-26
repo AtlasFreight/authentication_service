@@ -2,7 +2,7 @@
 
 This project sets up a **development** environment with:
 
-- 2 instances of **Keycloak 24** (`keycloak1` and `keycloak2`)
+- 2 instances of **Keycloak 24** (`kc1` and `kc2`)
 - A **shared PostgreSQL database** (`keycloak-db`)
 - Each Keycloak instance is accessible on a **different port** for testing.
 
@@ -15,8 +15,8 @@ This project sets up a **development** environment with:
 | Service       | Image                             | Local Port | Description                        |
 |---------------|----------------------------------|------------|------------------------------------|
 | keycloak-db   | postgres:15                      | N/A        | Shared database for Keycloak       |
-| keycloak1     | quay.io/keycloak/keycloak:24.0  | 8081       | Keycloak instance 1                |
-| keycloak2     | quay.io/keycloak/keycloak:24.0  | 8082       | Keycloak instance 2                |
+| kc1     | quay.io/keycloak/keycloak:24.0  | 8081       | Keycloak instance 1                |
+| kc2     | quay.io/keycloak/keycloak:24.0  | 8082       | Keycloak instance 2                |
 
 ---
 
@@ -52,34 +52,12 @@ docker-compose ps
 ## Accessing Keycloak
 * Keycloak1: http://localhost:8081/admin/master/console/
 * Keycloak2: http://localhost:8082/admin/master/console/
+* Load Balancer: http://localhost:8000/admin/master/console/
 
-Admin username/password:
-```text
-admin / admin
-```
+Check `deployments/.env` for the default credentials.`
 
 ---
 
-## Technical Details
-* **PostgreSQL** is used as the central database (`keycloak-db`).
-* Each Keycloak instance runs `start-dev` with the following options:
-
-```text
---hostname-strict=false
---db=postgres
---db-url=jdbc:postgresql://keycloak-db:5432/keycloak
---db-username=keycloak
---db-password=secret
-```
-
-> Note: Although `start-dev` normally uses H2, it can connect to PostgreSQL if the URL, username, and password are
-provided correctly.
-
-* Each container connects to the Docker network `atlasfreight-net`.
-* **PostgreSQL** data is persisted in a volume named `keycloak-db_data`.
-
----
- 
 ## Useful Commands
 * Stop the environment:
 
@@ -90,19 +68,13 @@ docker-compose down
 * View logs for Keycloak1:
 
 ```bash
-docker-compose logs -f keycloak1
+docker-compose logs -f kc1
 ```
 
 * Restart Keycloak2:
 
 ```bash
-docker-compose restart keycloak2
-```
-
-* Access the database:
-
-```bash
-docker exec -it keycloak-db psql -U keycloak -d keycloak
+docker-compose restart kc2
 ```
 
 ## Considerations
