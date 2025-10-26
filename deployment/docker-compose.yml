@@ -1,0 +1,125 @@
+services:
+  keycloak-db:
+    image: postgres:15
+    container_name: keycloak-db
+    environment:
+      POSTGRES_DB: ${KEYCLOAK_DATABASE}
+      POSTGRES_USER: ${KEYCLOAK_DATABASE_USER}
+      POSTGRES_PASSWORD: ${KEYCLOAK_DATABASE_PASSWORD}
+    volumes:
+      - keycloak-db_data:/var/lib/postgresql/data
+    networks:
+      - atlasfreight-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${KEYCLOAK_DATABASE_USER} -d ${KEYCLOAK_DATABASE}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  keycloak1:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak1
+    command:
+      - start
+      - --hostname-strict=false
+      - --proxy=edge
+      - --db=postgres
+      - --db-url=jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DATABASE}
+      - --db-username=${KEYCLOAK_DATABASE_USER}
+      - --db-password=${KEYCLOAK_DATABASE_PASSWORD}
+      - --http-enabled=true
+      - --cache=ispn
+      - --cache-stack=tcp
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_LOG_LEVEL: INFO
+      JAVA_OPTS_APPEND: "-Djgroups.dns.query=keycloak-discovery"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - atlasfreight-net
+    labels:
+      - "SERVICE_NAME=keycloak1"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    restart: unless-stopped
+
+  keycloak2:
+    image: quay.io/keycloak/keycloak:24.0
+    container_name: keycloak2
+    command:
+      - start
+      - --hostname-strict=false
+      - --proxy=edge
+      - --db=postgres
+      - --db-url=jdbc:postgresql://keycloak-db:5432/${KEYCLOAK_DATABASE}
+      - --db-username=${KEYCLOAK_DATABASE_USER}
+      - --db-password=${KEYCLOAK_DATABASE_PASSWORD}
+      - --http-enabled=true
+      - --cache=ispn
+      - --cache-stack=tcp
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD}
+      KC_LOG_LEVEL: INFO
+      JAVA_OPTS_APPEND: "-Djgroups.dns.query=keycloak-discovery"
+    depends_on:
+      keycloak-db:
+        condition: service_healthy
+    networks:
+      - atlasfreight-net
+    labels:
+      - "SERVICE_NAME=keycloak2"
+    deploy:
+      resources:
+        limits:
+          cpus: '2'
+          memory: 2G
+        reservations:
+          cpus: '1'
+          memory: 1G
+    restart: unless-stopped
+
+  # Nginx como Load Balancer
+  nginx-lb:
+    image: nginx:alpine
+    container_name: keycloak-loadbalancer
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - keycloak1
+      - keycloak2
+    networks:
+      - atlasfreight-net
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:8080/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 3
+    restart: unless-stopped
+
+volumes:
+  keycloak-db_data:
+    driver: local
+
+networks:
+  atlasfreight-net:
+    external: true
