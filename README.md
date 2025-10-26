@@ -1,4 +1,4 @@
-# Keycloak Docker Compose (Development)
+# Keycloak Cluster
 
 This project sets up a **development** environment with:
 
@@ -82,4 +82,3 @@ docker-compose restart kc2
 * **Cache and clustering**: Each Keycloak instance uses local cache (`KC_CACHE=local`), so changes are not automatically
 synchronized between instances.
 * **Consul or load balancer registration**: Not included in this setup.
-* **Development mode**: `start-dev` is recommended only for testing and quick development. For production, use `start --optimized`.
