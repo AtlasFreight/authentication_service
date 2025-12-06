@@ -38,7 +38,7 @@ docker network create atlasfreight-net
 2. Start the containers:
 
 ```bash
-docker-compose up -d
+docker compose -p authentication_service -f deployment/docker-compose.yaml up -d
 ```
 
 3. Verify that the containers are running:
