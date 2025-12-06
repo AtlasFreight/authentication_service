@@ -66,6 +66,7 @@ services:
       - keycloak-network
 
   nginx:
+    container_name: keycloak_lb
     image: nginx:alpine
     ports:
       - "80:80"
