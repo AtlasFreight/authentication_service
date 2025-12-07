@@ -56,6 +56,14 @@ docker-compose ps
 
 Check `deployments/.env` for the default credentials.`
 
+## Vault Configuration Variables
+
+```bash
+vault kv put secret/application \
+KEYCLOAK_ISSUER_JWK="http://keycloak_lb/realms/atlas_freight/protocol/openid-connect/certs" \
+KEYCLOAK_ISSUER_URI="http://localhost/realms/atlas_freight"
+```
+
 ---
 
 ## Useful Commands
