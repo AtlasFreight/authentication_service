@@ -57,6 +57,19 @@ docker-compose ps
 Check `deployments/.env` for the default credentials.`
 
 ## Vault Configuration Variables
+To set the Keycloak configuration variables in our microservices, we need to define
+`spring.security.oauth2.resourceserver.jwt.issuer-uri` and
+`spring.security.oauth2.resourceserver.jwt.jwk-set-uri`. So, if the microservice is running on our local machine, we can
+set the following variables `KEYCLOAK_ISSUER_URI` and `KEYCLOAK_ISSUER_JWK` in the `application.properties` file:
+
+```properties
+# application.properties
+spring.security.oauth2.resourceserver.jwt.issuer-uri=${KEYCLOAK_ISSUER_URI:http://localhost/realms/atlas_freight}
+spring.security.oauth2.resourceserver.jwt.jwk-set-uri=${KEYCLOAK_ISSUER_JWK:http://localhost/realms/atlas_freight/protocol/openid-connect/certs}
+```
+
+As you can see we use `localhost` as the issuer URI and the JWK set URI. But if our microservice is dockerized, we can
+set the variables using the following command:
 
 ```bash
 vault kv put secret/application \
