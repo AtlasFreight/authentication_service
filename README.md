@@ -38,7 +38,7 @@ docker network create atlasfreight-net
 2. Start the containers:
 
 ```bash
-docker-compose up -d
+docker compose -p authentication_service -f deployment/docker-compose.yaml up -d
 ```
 
 3. Verify that the containers are running:
@@ -55,6 +55,14 @@ docker-compose ps
 * Load Balancer: http://localhost:8000/admin/master/console/
 
 Check `deployments/.env` for the default credentials.`
+
+## Vault Configuration Variables
+
+```bash
+vault kv put secret/application \
+KEYCLOAK_ISSUER_JWK="http://keycloak_lb/realms/atlas_freight/protocol/openid-connect/certs" \
+KEYCLOAK_ISSUER_URI="http://localhost/realms/atlas_freight"
+```
 
 ---
 

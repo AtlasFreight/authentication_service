@@ -1,0 +1,89 @@
+version: '3.8'
+
+services:
+  keycloak_db:
+    image: postgres:15
+    environment:
+      POSTGRES_DB: ${KEYCLOAK_DATABASE:-keycloak}
+      POSTGRES_USER: ${KC_DB_USERNAME:-keycloak}
+      POSTGRES_PASSWORD: ${KC_DB_PASSWORD:-password}
+    volumes:
+      - keycloak_db_data:/var/lib/postgresql/data
+    networks:
+      - keycloak-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${KC_DB_USERNAME:-keycloak}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  keycloak-1:
+    image: quay.io/keycloak/keycloak:26.0.2
+    command: start
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak_db:5432/${KEYCLOAK_DATABASE:-keycloak}
+      KC_DB_USERNAME: ${KC_DB_USERNAME:-keycloak}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-password}
+      KC_HOSTNAME: localhost
+      KC_PROXY: edge
+      KC_HTTP_ENABLED: "true"
+      # Configuración de cluster
+      KC_CACHE: ispn
+      KC_CACHE_STACK: tcp
+      JGROUPS_DISCOVERY_PROTOCOL: JDBC_PING
+      JGROUPS_DISCOVERY_PROPERTIES: datasource_jndi_name=java:jboss/datasources/KeycloakDS
+    depends_on:
+      keycloak_db:
+        condition: service_healthy
+    networks:
+      - keycloak-network
+
+  keycloak-2:
+    image: quay.io/keycloak/keycloak:26.0.2
+    command: start
+    environment:
+      KEYCLOAK_ADMIN: ${KEYCLOAK_ADMIN_USER:-admin}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_ADMIN_PASSWORD:-admin}
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://keycloak_db:5432/${KEYCLOAK_DATABASE:-keycloak}
+      KC_DB_USERNAME: ${KC_DB_USERNAME:-keycloak}
+      KC_DB_PASSWORD: ${KC_DB_PASSWORD:-password}
+      KC_HOSTNAME: localhost
+      KC_PROXY: edge
+      KC_HTTP_ENABLED: "true"
+      # Configuración de cluster
+      KC_CACHE: ispn
+      KC_CACHE_STACK: tcp
+      JGROUPS_DISCOVERY_PROTOCOL: JDBC_PING
+      JGROUPS_DISCOVERY_PROPERTIES: datasource_jndi_name=java:jboss/datasources/KeycloakDS
+    depends_on:
+      keycloak_db:
+        condition: service_healthy
+    networks:
+      - keycloak-network
+
+  nginx:
+    container_name: keycloak_lb
+    image: nginx:alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - keycloak-1
+      - keycloak-2
+    networks:
+      - keycloak-network
+      - atlasfreight-net
+
+volumes:
+  keycloak_db_data:
+
+networks:
+  keycloak-network:
+    driver: bridge
+  atlasfreight-net:
+    external: true
